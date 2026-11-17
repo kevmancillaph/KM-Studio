@@ -13,7 +13,7 @@
     __save() {
       if (!this.__name) return;
       clearTimeout(this.__st);
-      this.__st = setTimeout(() => { try { localStorage.setItem(SAVE_PREFIX + this.__name, JSON.stringify(this.state)); } catch (e) {} }, 120);
+      this.__st = setTimeout(() => { try { localStorage.setItem(SAVE_PREFIX + this.__name, JSON.stringify(Object.fromEntries(Object.entries(this.state).filter(([k]) => k[0] !== '_')))); } catch (e) {} }, 120);
     }
   }
   window.DCLogic = DCLogic;
@@ -26,7 +26,7 @@
   };
   const interp = (s, scope) => s.replace(/\{\{([^}]+)\}\}/g, (m, p) => { const v = look(p, scope); return v == null ? '' : String(v); });
   const whole = (s) => { const m = /^\s*\{\{([^}]+)\}\}\s*$/.exec(s || ''); return m ? m[1] : null; };
-  const EV = { onclick: 'click', onchange: 'change', oninput: 'input', onfocus: 'focus', onblur: 'blur', onkeydown: 'keydown' };
+  const EV = { onclick: 'click', onchange: 'change', oninput: 'input', onfocus: 'focus', onblur: 'blur', onkeydown: 'keydown', oncontextmenu: 'contextmenu' };
 
   function build(node, scope, parent) {
     if (node.nodeType === 3) { parent.appendChild(document.createTextNode(interp(node.textContent, scope))); return; }
