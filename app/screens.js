@@ -1943,6 +1943,12 @@ this.kmSfx('tap');
 const tests = [['tap', 'Toque'], ['done', 'Etapa lista'], ['goal', 'Meta cumplida'], ['coin', 'Pago'], ['alert', 'Aviso de boda'], ['start', 'Iniciar cronómetro']].map(([k, label]) => ({ label, play: () => this.kmSfx(k) }));
 
 const go = (v) => () => { this.kmSfx('tap'); this.setState({ view: v }); };
+const VACIAR = { label: 'Vaciar datos de ejemplo', value: 'Borra clientes, entregas y cotizaciones guardadas. Conserva tus precios y ajustes.', open: () => { if (!window.confirm('¿Vaciar los datos de ejemplo?\n\nSe borran clientes, entregas y cotizaciones guardadas. Tus precios, equipo y ajustes se conservan. No se puede deshacer.')) return; try { localStorage.setItem('kmS.Clientes', JSON.stringify({ clients: [], selId: null, view: 'list', filter: 'Todos' })); localStorage.setItem('kmS.Proyecto', JSON.stringify({ items: [], view: 'list', selId: null })); ['kmAcc', 'kmPV', 'kmHid'].forEach((k) => localStorage.removeItem(k)); } catch (e) {} try { localStorage.setItem('kmVacio', '1'); } catch (e) {} this.kmSfx('done'); setTimeout(() => location.reload(), 300); } };
+let hasSample = true;
+try {
+if (localStorage.getItem('kmVacio') === '1') hasSample = false;
+else { const sc = JSON.parse(localStorage.getItem('kmS.Clientes') || 'null'); if (sc && Array.isArray(sc.clients)) hasSample = sc.clients.some((c) => c.id <= 5 && !c.accNew); }
+} catch (e) {}
 const groups = [
 { title: 'Apariencia', items: [
 { label: 'Temas', value: curTheme.name + ' · 8 disponibles', open: go('temas') },
@@ -1956,10 +1962,9 @@ const groups = [
 ] },
 { title: 'Cuenta', items: [
 { label: 'Mi negocio', value: cfg.name.trim() ? cfg.name.trim() : 'Nombre, WhatsApp y firma sin completar', open: go('negocio') },
-{ label: 'Respaldo y datos', value: cfg.autobackup ? 'Respaldo automático activo' : 'Respaldo automático apagado', open: go('datos') },
-{ label: 'Vaciar datos de ejemplo', value: 'Borra clientes, entregas y cotizaciones guardadas. Conserva tus precios y ajustes.', open: () => { if (!window.confirm('¿Vaciar los datos de ejemplo?\n\nSe borran clientes, entregas y cotizaciones guardadas. Tus precios, equipo y ajustes se conservan. No se puede deshacer.')) return; try { localStorage.setItem('kmS.Clientes', JSON.stringify({ clients: [], selId: null, view: 'list', filter: 'Todos' })); localStorage.setItem('kmS.Proyecto', JSON.stringify({ items: [], view: 'list', selId: null })); ['kmAcc', 'kmPV', 'kmHid'].forEach((k) => localStorage.removeItem(k)); } catch (e) {} this.kmSfx('done'); setTimeout(() => location.reload(), 300); } }
+{ label: 'Respaldo y datos', value: cfg.autobackup ? 'Respaldo automático activo' : 'Respaldo automático apagado', open: go('datos') }
 ] }
-].map((g) => ({ ...g, items: g.items.map((it, idx) => ({ ...it, border: idx === 0 ? '0 solid transparent' : '1px solid var(--card2)' })) }));
+].map((g) => g.title === 'Cuenta' && hasSample ? { ...g, items: g.items.concat([VACIAR]) } : g).map((g) => ({ ...g, items: g.items.map((it, idx) => ({ ...it, border: idx === 0 ? '0 solid transparent' : '1px solid var(--card2)' })) }));
 
 let rows = [];
 let subTitle = '', subHint = '';
