@@ -20,7 +20,9 @@
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="app/runtime.js"></script>
 <script src="app/screens.js"></script>
+<script src="app/datos.js"></script>
 <script>
+KM_DATA.seed();
 KM.route();
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 if ('serviceWorker' in navigator) {
