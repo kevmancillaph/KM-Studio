@@ -43,7 +43,7 @@ window.KM_DATA = (function () {
   };
   const planCobro = () => {
     const t = today(); let best = null;
-    clients().forEach((c) => { const p = c.plan; if (!p || !p.start) return; for (let k = 0; k < 6; k++) { const dt = toDate(p.start); dt.setDate(dt.getDate() + 14 * k); const d = iso(dt); if (d >= t) { if (!best || d < best.d) best = { d, c }; break; } } });
+    clients().forEach((c) => { const p = c.plan; if (!p || !p.start) return; for (let k = 0; k < 6; k++) { const dt = toDate(p.start); dt.setDate(dt.getDate() + (p.days || 14) * k); const d = iso(dt); if (d >= t) { if (!best || d < best.d) best = { d, c }; break; } } });
     return best;
   };
   const hasSample = () => { try { if (localStorage.getItem('kmVacio') === '1') return false; } catch (e) {} const c = J('kmS.Clientes', {}).clients; return Array.isArray(c) ? c.some((x) => x.id <= 5 && !x.accNew) : true; };
