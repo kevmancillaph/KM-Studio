@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KM Studio</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon.png">
@@ -16,6 +16,7 @@
 <body>
 <div id="app"></div>
 <div id="upd" style="position:fixed;left:12px;right:12px;bottom:96px;background:#C6F432;color:#0E0F13;border-radius:16px;padding:12px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;font:600 15px system-ui;z-index:99"><span>Hay una versión nueva</span><button id="upb" style="min-height:40px;border:0;border-radius:12px;background:#0E0F13;color:#C6F432;font:600 15px system-ui;padding:0 14px">Actualizar</button></div>
+<script>(function(){function f(){var v=window.visualViewport;var h=Math.round(v?v.height:window.innerHeight);document.documentElement.style.setProperty('--vh',h+'px');}f();window.addEventListener('resize',f);if(window.visualViewport)window.visualViewport.addEventListener('resize',f);window.addEventListener('orientationchange',function(){setTimeout(f,200)});})();</script>
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="app/runtime.js"></script>
 <script src="app/screens.js"></script>
