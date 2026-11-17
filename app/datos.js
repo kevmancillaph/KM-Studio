@@ -37,6 +37,7 @@ window.KM_DATA = (function () {
   const nextEvent = () => {
     const t = today(); const ev = [];
     acc().forEach((q) => { if (q.event && q.event >= t) ev.push({ d: q.event, title: (q.isFijo === false ? 'Evento' : 'Boda') + ' · ' + q.client }); });
+    clients().forEach((c) => { if (c.event && c.event >= t) ev.push({ d: c.event, title: (c.kind === 'Boda' ? 'Boda de ' : 'Evento · ') + c.name }); });
     ev.sort((a, b) => a.d.localeCompare(b.d));
     return ev[0] || null;
   };
