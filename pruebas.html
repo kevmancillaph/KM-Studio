@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KM Studio</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#000000">
+<style>
+:root{--bg:#0b0c0f;--card:#14161b;--line:#262a33;--text:#f2f4f7;--muted:#8b93a1;--accent:#b7f22a;--on:#0b0c0f;--warn:#ff8a5c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+h1{font-size:22px;margin:4px 0 2px;display:flex;align-items:center;gap:10px}
+h1 img{width:40px;height:40px;border-radius:10px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.card h2{font-size:16px;margin:0}
+.card p{margin:0;color:var(--muted);font-size:13px}
+button,.btn{min-height:48px;border-radius:12px;border:0;background:var(--accent);color:var(--on);font:600 15px system-ui;padding:0 16px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center}
+button.sec{background:#1f232b;color:var(--accent)}
+input,select{min-height:48px;border-radius:12px;border:1px solid var(--line);background:#0e1015;color:var(--text);padding:0 12px;font-size:15px;width:100%}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.out:empty{display:none}.out{font-size:13px;color:var(--text);background:#0e1015;border-radius:10px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+.ok{color:var(--accent)}.bad{color:var(--warn)}
+#upd{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));background:var(--accent);color:var(--on);border-radius:16px;padding:12px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;font-weight:600;z-index:9}
+#upd button{background:var(--on);color:var(--accent);min-height:40px}
+</style>
+</head>
+<body>
+<h1><img src="icons/icon-192.png" alt="">KM Studio</h1>
+<p class="sub">Demo de pruebas · versión <span id="ver"></span> · <span id="modo"></span></p>
+
+<div class="card"><h2>1 · Instalar</h2><p>Que quede como app con tu icono, sin barra del navegador.</p>
+<button id="inst" class="sec">Instalar app</button><div class="out" id="o1"></div></div>
+
+<div class="card"><h2>2 · Datos guardados en el teléfono</h2><p>Guarda un cliente de prueba, cierra la app y vuelve a abrirla: debe seguir ahí.</p>
+<div class="row"><input id="cn" placeholder="Nombre del cliente"><button id="cs" style="flex:none;width:110px">Guardar</button></div>
+<div class="out" id="o2"></div>
+<div class="row"><button id="bk" class="sec">Descargar respaldo</button><label class="btn sec" style="background:#1f232b;color:var(--accent)">Restaurar<input id="rs" type="file" accept=".json,application/json" hidden></label></div></div>
+
+<div class="card"><h2>3 · Recordatorio de boda con alarma</h2><p>Crea un archivo de calendario. Al tocarlo, Google Calendar lo agrega con aviso.</p>
+<input id="et" value="Boda de Karen y Mauro">
+<div class="row"><input id="ed" type="date"><select id="eb"><option value="7">Avisar 7 días antes</option><option value="3">3 días antes</option><option value="1">1 día antes</option></select></div>
+<button id="ics">Crear recordatorio</button><div class="out" id="o3"></div></div>
+
+<div class="card"><h2>4 · Cotización en PDF</h2><p>Genera un PDF de ejemplo en el teléfono y lo comparte por WhatsApp.</p>
+<button id="pdf">Generar y compartir PDF</button><div class="out" id="o4"></div></div>
+
+<div class="card"><h2>5 · Copiar cobro</h2><p>Copia un mensaje de cobro para pegarlo en WhatsApp.</p>
+<button id="cp" class="sec">Copiar mensaje de ejemplo</button><div class="out" id="o5"></div></div>
+
+<div class="card"><h2>6 · Versión nueva</h2><p>Cuando subo cambios, aparece un aviso para actualizar.</p>
+<button id="chk" class="sec">Buscar actualización</button><div class="out" id="o6"></div></div>
+
+<div id="upd"><span>Hay una versión nueva</span><button id="upb">Actualizar</button></div>
+
+<script src="lib/jspdf.umd.min.js"></script>
+<script>
+const VER = '0.1.0';
+const $ = (id) => document.getElementById(id);
+$('ver').textContent = VER;
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+$('modo').textContent = standalone ? 'abierta como app' : 'abierta en el navegador';
+
+// 1 instalar
+let ev = null;
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); ev = e; $('o1').innerHTML = '<span class="ok">Listo para instalar.</span>'; });
+addEventListener('appinstalled', () => { $('o1').innerHTML = '<span class="ok">Instalada.</span>'; });
+$('o1').textContent = standalone ? 'Ya está instalada.' : 'Si el botón no responde: menú ⋮ de Chrome → Instalar app.';
+$('inst').onclick = async () => { if (!ev) { $('o1').textContent = 'Chrome aún no ofrece instalar. Menú ⋮ → Instalar app / Agregar a pantalla de inicio.'; return; } ev.prompt(); await ev.userChoice; ev = null; };
+
+// 2 datos (IndexedDB)
+const db = new Promise((ok, no) => { const r = indexedDB.open('km', 1); r.onupgradeneeded = () => r.result.createObjectStore('clientes', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+const tx = async (m, f) => { const d = await db; return new Promise((ok, no) => { const t = d.transaction('clientes', m); const s = t.objectStore('clientes'); const q = f(s); t.oncomplete = () => ok(q && q.result); t.onerror = () => no(t.error); }); };
+async function pintar() {
+  const l = (await tx('readonly', (s) => s.getAll())) || [];
+  let p = '';
+  try { p = navigator.storage && navigator.storage.persisted ? (await navigator.storage.persisted()) ? 'Almacenamiento protegido: sí' : 'Almacenamiento protegido: no' : ''; } catch (e) {}
+  $('o2').textContent = (l.length ? l.map((c) => '• ' + c.nombre + ' (' + c.fecha + ')').join('\n') : 'Sin clientes guardados.') + (p ? '\n' + p : '');
+}
+$('cs').onclick = async () => { const n = $('cn').value.trim(); if (!n) return; await tx('readwrite', (s) => s.put({ id: Date.now(), nombre: n, fecha: new Date().toLocaleString('es-BO') })); $('cn').value = ''; pintar(); };
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(pintar); else pintar();
+$('bk').onclick = async () => { const l = (await tx('readonly', (s) => s.getAll())) || []; const b = new Blob([JSON.stringify({ app: 'KM Studio', version: VER, fecha: new Date().toISOString(), clientes: l }, null, 1)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'km-respaldo-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); };
+$('rs').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); for (const c of j.clientes || []) await tx('readwrite', (s) => s.put(c)); pintar(); } catch (x) { $('o2').textContent = 'El archivo no es un respaldo válido.'; } };
+
+// 3 recordatorio .ics
+const d2 = new Date(); d2.setDate(d2.getDate() + 30); $('ed').value = d2.toISOString().slice(0, 10);
+const esc = (t) => t.replace(/[\;,]/g, (m) => '\\' + m).replace(/\n/g, '\\n');
+$('ics').onclick = () => {
+  const t = $('et').value.trim() || 'Evento', f = $('ed').value, dias = $('eb').value; if (!f) return;
+  const ymd = f.replace(/-/g, ''); const fin = new Date(f + 'T00:00:00'); fin.setDate(fin.getDate() + 1); const ymd2 = fin.toISOString().slice(0, 10).replace(/-/g, '');
+  const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const s = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KM Studio//ES', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', 'UID:km-' + Date.now() + '@kmstudio', 'DTSTAMP:' + now, 'DTSTART;VALUE=DATE:' + ymd, 'DTEND;VALUE=DATE:' + ymd2, 'SUMMARY:' + esc(t), 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc(t), 'TRIGGER:-P' + dias + 'D', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const b = new Blob([s], { type: 'text/calendar' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'recordatorio.ics'; a.click();
+  $('o3').textContent = 'Archivo creado. Ábrelo desde Descargas o la notificación para agregarlo a Google Calendar.';
+};
+
+// 4 PDF
+$('pdf').onclick = async () => {
+  try {
+    const { jsPDF } = window.jspdf; const p = new jsPDF({ unit: 'mm', format: 'a4' });
+    p.setFillColor(0, 0, 0); p.rect(0, 0, 210, 34, 'F');
+    const img = await new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = 'icons/icon-512.png'; });
+    const c = document.createElement('canvas'); c.width = 512; c.height = 512; c.getContext('2d').drawImage(img, 0, 0); p.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 10, 4, 26, 26);
+    p.setTextColor(183, 242, 42); p.setFontSize(18); p.text('KM Studio', 42, 17); p.setTextColor(200); p.setFontSize(10); p.text('Cotización N.º 0031', 42, 24);
+    p.setTextColor(20); p.setFontSize(12); p.text('Cliente: Karen y Mauro', 12, 48); p.text('Fecha del evento: 20 dic 2026', 12, 55);
+    const fila = [['Grabación de boda · 8 h · Sony A7 IV', 'Bs 3.600'], ['Edición highlights 3 min', 'Bs 1.200'], ['Subtítulos', 'Incluido']];
+    let y = 72; p.setDrawColor(200); fila.forEach((r) => { p.text(r[0], 12, y); p.text(r[1], 198, y, { align: 'right' }); y += 4; p.line(12, y, 198, y); y += 8; });
+    p.setFontSize(14); p.text('Total', 12, y + 4); p.text('Bs 4.800', 198, y + 4, { align: 'right' });
+    p.setFontSize(9); p.setTextColor(110); p.text('Anticipo del 50 %. No se devuelve si se cancela el evento.', 12, 270);
+    const blob = p.output('blob'); const file = new File([blob], 'cotizacion-0031.pdf', { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Cotización KM Studio' }); $('o4').innerHTML = '<span class="ok">PDF compartido.</span>'; }
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); $('o4').textContent = 'Este navegador no comparte archivos. Se descargó el PDF.'; }
+  } catch (x) { if (x && x.name === 'AbortError') { $('o4').textContent = 'Cancelaste el envío.'; } else { $('o4').innerHTML = '<span class="bad">Error: ' + (x && x.message) + '</span>'; } }
+};
+
+// 5 copiar
+$('cp').onclick = async () => {
+  const t = 'Hola, el cobro de este jueves 19 nov:\nPlan quincenal (6 videos): Bs 1.500\nCobertura final: Bs 600\nCrédito: -Bs 250\nTotal a pagar: Bs 1.850';
+  try { await navigator.clipboard.writeText(t); $('o5').innerHTML = '<span class="ok">Copiado.</span>\n' + t; } catch (x) { $('o5').innerHTML = '<span class="bad">No se pudo copiar.</span>'; }
+};
+
+// 6 service worker + aviso
+let reg = null;
+function aviso(w) { $('upd').style.display = 'flex'; $('upb').onclick = () => w.postMessage('saltar'); }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then((r) => {
+    reg = r;
+    if (r.waiting && navigator.serviceWorker.controller) aviso(r.waiting);
+    r.addEventListener('updatefound', () => { const n = r.installing; n.addEventListener('statechange', () => { if (n.state === 'installed' && navigator.serviceWorker.controller) aviso(n); }); });
+    $('o6').textContent = 'Funciona sin internet: ' + (navigator.serviceWorker.controller ? 'sí' : 'se activa tras recargar una vez');
+  });
+  let rec = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (rec) return; rec = true; location.reload(); });
+} else $('o6').textContent = 'Este navegador no soporta modo sin internet.';
+$('chk').onclick = async () => { if (!reg) return; $('o6').textContent = 'Buscando…'; await reg.update(); setTimeout(() => { if ($('upd').style.display !== 'flex') $('o6').textContent = 'Ya tienes la última versión (' + VER + ').'; }, 1500); };
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KM Studio</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:wght@600;700&family=Jost:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=Syne:wght@600;700&family=Outfit:wght@400;500;600&family=Fraunces:wght@600;700&family=Public+Sans:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="app/app.css">
+</head>
+<body>
+<div id="app"></div>
+<div id="upd" style="position:fixed;left:12px;right:12px;bottom:96px;background:#C6F432;color:#0E0F13;border-radius:16px;padding:12px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;font:600 15px system-ui;z-index:99"><span>Hay una versión nueva</span><button id="upb" style="min-height:40px;border:0;border-radius:12px;background:#0E0F13;color:#C6F432;font:600 15px system-ui;padding:0 14px">Actualizar</button></div>
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="app/runtime.js"></script>
+<script src="app/screens.js"></script>
+<script>
+KM.route();
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+if ('serviceWorker' in navigator) {
+  const aviso = (w) => { document.getElementById('upd').style.display = 'flex'; document.getElementById('upb').onclick = () => w.postMessage('saltar'); };
+  navigator.serviceWorker.register('sw.js').then((r) => {
+    if (r.waiting && navigator.serviceWorker.controller) aviso(r.waiting);
+    r.addEventListener('updatefound', () => { const n = r.installing; n.addEventListener('statechange', () => { if (n.state === 'installed' && navigator.serviceWorker.controller) aviso(n); }); });
+  });
+  let rec = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (rec) return; rec = true; location.reload(); });
+}
+</script>
+</body>
+</html>
