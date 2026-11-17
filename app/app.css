@@ -211,4 +211,4 @@ html,body{margin:0;height:100%;background:#000;overscroll-behavior:none}
 #app{height:100dvh;display:flex;justify-content:center;background:var(--bg,#0E0F13)}
 #screen{width:100%;max-width:480px;height:100dvh;position:relative}
 #screen .kmroot{width:100%!important;height:100dvh!important;min-height:0!important}
-#screen .kmroot>div:first-child{height:calc(100dvh - 84px)!important;overflow-y:auto!important;padding-top:calc(env(safe-area-inset-top,0px) + 28px)!important;-webkit-overflow-scrolling:touch}
+#screen .kmroot>div:first-child{height:calc(100dvh - 84px)!important;overflow-y:auto!important;padding-top:calc(env(safe-area-inset-top,0px) + 28px)!important;padding-bottom:130px!important;box-sizing:border-box!important;-webkit-overflow-scrolling:touch}
