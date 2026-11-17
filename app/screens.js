@@ -22,6 +22,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -31,7 +34,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -155,6 +158,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -164,7 +170,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -408,6 +414,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -417,7 +426,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -1067,6 +1076,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -1076,7 +1088,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -1316,6 +1328,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -1325,7 +1340,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -1582,6 +1597,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -1591,7 +1609,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -1742,6 +1760,9 @@ if (!AC) return;
 this.kmAc = this.kmAc || new AC();
 const ac = this.kmAc;
 if (ac.state === 'suspended') ac.resume();
+let lv = 4; try { lv = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+if (!this.kmMaster || this.kmMasterAc !== ac) { const cp = ac.createDynamicsCompressor(); cp.connect(ac.destination); this.kmMaster = ac.createGain(); this.kmMaster.connect(cp); this.kmMasterAc = ac; }
+this.kmMaster.gain.value = [0, 1, 2, 3, 4.5, 6][Math.min(5, Math.max(1, lv))];
 const t0 = ac.currentTime;
 const note = (f, at, dur, type, vol, f2) => {
 const o = ac.createOscillator(); const g = ac.createGain();
@@ -1751,7 +1772,7 @@ if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + at + dur);
 g.gain.setValueAtTime(0.0001, t0 + at);
 g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + at + 0.012);
 g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-o.connect(g); g.connect(ac.destination);
+o.connect(g); g.connect(this.kmMaster);
 o.start(t0 + at); o.stop(t0 + at + dur + 0.03);
 };
 const S = {
@@ -1870,6 +1891,8 @@ const groups = [
 let rows = [];
 let subTitle = '', subHint = '';
 const v = st.view;
+let vol = 4; try { vol = Number(localStorage.getItem('kmVol')) || 4; } catch (e) {}
+const setVol = (n) => { const x = Math.min(5, Math.max(1, n)); try { localStorage.setItem('kmVol', String(x)); } catch (e) {} this.setState({ volTick: x }); this.kmSfx('done'); };
 if (v === 'sonidos') {
 subTitle = 'Sonidos'; subHint = 'Tonos cortos de la app';
 rows = [toggle('Sonidos de la app', sfxOff ? 'Apagados.' : 'Suenan al terminar etapas, cumplir la meta, registrar pagos y probar avisos.', !sfxOff, () => {
@@ -1877,7 +1900,7 @@ const next = !sfxOff;
 try { localStorage.setItem('kmSfx', next ? 'off' : 'on'); } catch (e) {}
 this.setState({ sfxOff: next });
 if (!next) this.kmSfx('done');
-})];
+}), step('Volumen', 'Sube o baja el volumen de los tonos.', 'Nivel ' + vol + ' de 5', () => setVol(vol - 1), () => setVol(vol + 1))];
 } else if (v === 'animaciones') {
 subTitle = 'Animaciones'; subHint = 'Movimiento de la app';
 rows = [toggle('Reducir animaciones', motionOff ? 'Sin transiciones, confeti ni contadores. Todo cambia al instante.' : 'Apágalas si el celular va lento o prefieres que todo cambie al instante.', motionOff, () => {
