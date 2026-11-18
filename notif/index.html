@@ -1,0 +1,28 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KM Studio · diagnóstico</title>
+<style>body{font:16px/1.4 system-ui,sans-serif;background:#0c0e12;color:#e8eaee;margin:0;padding:20px;max-width:480px}h1{font-size:22px}button{display:block;width:100%;height:52px;margin:10px 0;border-radius:12px;border:0;background:#c8f230;color:#0c0e12;font-size:16px;font-weight:700}button.s{background:#23262d;color:#e8eaee}pre{white-space:pre-wrap;background:#171a20;border-radius:10px;padding:12px;font-size:13px}</style></head><body>
+<h1>KM Studio · diagnóstico</h1>
+<p>Esta página no toca tus clientes ni cotizaciones.</p>
+<button id="b1">1. Probar notificación con botones</button>
+<p>Toca, acepta el permiso, bloquea la pantalla y espera unos segundos.</p>
+<button id="b2" class="s">2. Quitar la app vieja trabada</button>
+<p>Borra el service worker y el caché de la app. Tus datos quedan. Después abre la app otra vez.</p>
+<pre id="o">Cargando…</pre>
+<script>
+const o=document.getElementById('o');const log=(t)=>{o.textContent+='\n'+t};
+(async()=>{o.textContent='';
+try{log('Permiso de notificaciones: '+(window.Notification?Notification.permission:'no disponible'));
+const regs=await navigator.serviceWorker.getRegistrations();log('Service workers en este sitio: '+regs.length);regs.forEach(r=>log(' - '+r.scope));
+const ks=await caches.keys();log('Cachés de la app: '+(ks.join(', ')||'ninguno'));
+let n=0;try{const s=JSON.parse(localStorage['kmS.Clientes']||'{}');n=(s.clients||[]).length}catch(e){}log('Clientes guardados en este teléfono: '+n);
+}catch(e){log('Error: '+e.message)}})();
+document.getElementById('b1').onclick=async()=>{try{
+let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
+if(p!=='granted'){log('Permiso: '+p+'. Actívalo en Ajustes > Apps > Chrome > Notificaciones.');return}
+const r=await navigator.serviceWorker.register('sw.js',{scope:'./'});await navigator.serviceWorker.ready;
+await r.showNotification('Edición · Promo hamburguesa',{body:'Etapa: Cortes · 12:34',tag:'km-demo',requireInteraction:true,vibrate:[120,60,120],actions:[{action:'pausa',title:'Pausar'},{action:'listo',title:'Check'},{action:'sig',title:'Siguiente'}]});
+log('Enviada. Bloquea la pantalla y mira.')}catch(e){log('Error: '+e.message)}};
+document.getElementById('b2').onclick=async()=>{try{
+const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs){if(r.scope.indexOf('/notif/')<0)await r.unregister()}
+for(const k of await caches.keys())await caches.delete(k);
+log('Listo. Ahora cierra la app instalada y ábrela de nuevo. Debe decir v1.4.3 junto a la fecha en Hoy.')}catch(e){log('Error: '+e.message)}};
+</script></body></html>
