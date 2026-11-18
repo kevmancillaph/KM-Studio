@@ -38,5 +38,18 @@ if ('serviceWorker' in navigator) {
   let rec = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (rec) return; rec = true; location.reload(); });
 }
 </script>
+<script>
+window.kmNotifDemo = async function () {
+  try {
+    if (!('Notification' in window)) return 'Este navegador no tiene notificaciones.';
+    let p = Notification.permission;
+    if (p === 'default') p = await Notification.requestPermission();
+    if (p !== 'granted') return 'Permiso de notificaciones: ' + (p === 'denied' ? 'bloqueado. Actívalo en Ajustes de Android > Apps > KM Studio > Notificaciones.' : p);
+    const r = await navigator.serviceWorker.ready;
+    await r.showNotification('Edición · Promo hamburguesa', { body: 'Etapa: Cortes · 12:34', tag: 'km-demo', requireInteraction: true, silent: false, vibrate: [120, 60, 120], icon: './icons/icon-192.png', badge: './icons/favicon.png', data: { demo: true }, actions: [{ action: 'pausa', title: 'Pausar' }, { action: 'listo', title: 'Check ✓' }, { action: 'sig', title: 'Siguiente' }] });
+    return 'Enviada. Bloquea la pantalla y mira si aparece.';
+  } catch (e) { return 'Error: ' + e.message; }
+};
+</script>
 </body>
 </html>
