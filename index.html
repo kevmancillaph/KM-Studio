@@ -51,5 +51,26 @@ window.kmNotifDemo = async function () {
   } catch (e) { return 'Error: ' + e.message; }
 };
 </script>
+<script>
+window.kmPipDemo = async function () {
+  try {
+    const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180;
+    const g = cv.getContext('2d'); let t0 = Date.now(), run = true, paused = 0, stage = 1;
+    const draw = () => { const sec = Math.floor(((run ? Date.now() : paused) - t0) / 1000); const m = String(Math.floor(sec / 60)).padStart(2, '0'), s = String(sec % 60).padStart(2, '0'); g.fillStyle = '#0c0e12'; g.fillRect(0, 0, 320, 180); g.fillStyle = '#c8f230'; g.font = '700 64px sans-serif'; g.textAlign = 'center'; g.fillText(m + ':' + s, 160, 100); g.fillStyle = '#e8eaee'; g.font = '600 18px sans-serif'; g.fillText('Promo hamburguesa', 160, 32); g.font = '500 16px sans-serif'; g.fillText('Etapa ' + stage + ' · ' + (run ? 'corriendo' : 'en pausa'), 160, 150); };
+    draw(); const iv = setInterval(draw, 500);
+    const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.srcObject = cv.captureStream(10); v.style.cssText = 'position:fixed;left:-9999px;width:2px;height:2px';
+    document.body.appendChild(v); await v.play();
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: 'Promo hamburguesa', artist: 'Etapa 1 · Cortes', album: 'KM Studio' });
+      const set = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} };
+      set('pause', () => { paused = Date.now(); run = false; draw(); }); set('play', () => { t0 += Date.now() - paused; run = true; draw(); }); set('nexttrack', () => { stage++; draw(); });
+    }
+    if (!document.pictureInPictureEnabled) return 'Este navegador no abre imagen en imagen.';
+    v.addEventListener('leavepictureinpicture', () => { clearInterval(iv); v.remove(); });
+    await v.requestPictureInPicture();
+    return 'Flotando. Sal de la app y mira si el cronómetro sigue corriendo.';
+  } catch (e) { return 'No abrió: ' + e.message; }
+};
+</script>
 </body>
 </html>
