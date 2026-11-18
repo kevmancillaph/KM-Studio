@@ -72,5 +72,42 @@ window.kmPipDemo = async function () {
   } catch (e) { return 'No abrió: ' + e.message; }
 };
 </script>
+<script>
+(function () {
+  const D = () => window.KM_DATA; let audio = null, last = null, key = '', ready = false;
+  const silence = () => { const n = 8000, b = new ArrayBuffer(44 + n), v = new DataView(b); const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }; w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true); for (let i = 0; i < n; i++) v.setUint8(44 + i, 128); return URL.createObjectURL(new Blob([b], { type: 'audio/wav' })); };
+  const remount = () => { try { if (window.KM && KM.app && KM.app.name) KM.mount(KM.app.name); } catch (e) {} };
+  const find = (r) => { const it = D().items().find((x) => x.id === r.id); return it || null; };
+  const ms = () => navigator.mediaSession;
+  const act = (a, f) => { try { ms().setActionHandler(a, f); } catch (e) {} };
+  function setup() {
+    if (ready || !('mediaSession' in navigator)) return; ready = true;
+    act('play', () => { if (!last) return; D().setRun(last, Date.now()); remount(); sync(); });
+    act('pause', () => { const r = D().pauseNow(); if (r) last = r; remount(); sync(); });
+    act('nexttrack', () => { const r = D().pauseNow() || last; if (!r) return; D().finishNow(r); const it = find(r); const inf = it ? D().info(it) : null; last = inf && inf.cur >= 0 ? { id: r.id, idx: inf.cur } : null; remount(); sync(); });
+    act('previoustrack', null); act('seekbackward', null); act('seekforward', null); act('seekto', null);
+  }
+  function sync() {
+    try {
+      if (!D() || !('mediaSession' in navigator)) return;
+      const r = D().getRun(); const run = r.run;
+      if (run) last = run;
+      if (!last) { if (audio) { audio.pause(); } ms().metadata = null; ms().playbackState = 'none'; key = ''; return; }
+      const it = find(last); if (!it) { last = null; return; }
+      const inf = D().info(it); if (inf.all) { last = null; return; }
+      setup();
+      if (!audio) { audio = new Audio(silence()); audio.loop = true; }
+      const idx = last.idx; const stg = inf.stages;
+      const k = it.id + '|' + idx; if (k !== key) { key = k; ms().metadata = new MediaMetadata({ title: it.name + ' · ' + it.client, artist: 'Etapa ' + (idx + 1) + ' de ' + inf.n + ': ' + stg[idx], album: idx + 1 < inf.n ? 'Sigue: ' + stg[idx + 1] : 'Última etapa', artwork: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] }); }
+      const secs = ((it.times || {})[idx] || 0) + (run ? Math.max(0, (Date.now() - r.start) / 1000) : 0);
+      if (run) { if (audio.paused) audio.play().catch(() => {}); ms().playbackState = 'playing'; } else { if (!audio.paused) audio.pause(); ms().playbackState = 'paused'; }
+      try { ms().setPositionState({ duration: 43200, position: Math.min(43199, secs), playbackRate: 1 }); } catch (e) {}
+    } catch (e) {}
+  }
+  window.kmLock = { sync };
+  setInterval(sync, 1000);
+  document.addEventListener('click', () => setTimeout(sync, 150), true);
+})();
+</script>
 </body>
 </html>
