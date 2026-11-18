@@ -115,7 +115,26 @@
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[href]'); if (!a) return;
     const m = /([A-Za-z]+)\.dc\.html$/.exec(a.getAttribute('href') || ''); if (!m) return;
-    e.preventDefault(); location.hash = '#/' + m[1];
+    e.preventDefault();
+    const name = m[1];
+    const bar = a.closest('.kmroot>div[style*="height:84px"]');
+    if (bar) {
+      const n = new Date(), pad = (x) => String(x).padStart(2, '0');
+      const HOME = {
+        Clientes: { view: 'list', followMsg: false, _menu: null, _mMode: 'main', _addV: null },
+        Proyecto: { view: 'list', msg: '', _menu: null, _mMode: 'main' },
+        Cotizador: { view: 'form', tab: 'cli' },
+        Agenda: { tab: 'cal', y: n.getFullYear(), m: n.getMonth(), sel: n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate()) }
+      };
+      const home = HOME[name];
+      if (app.name === name) {
+        if (home && app.cur) app.cur.setState(home);
+        const sc2 = document.querySelector('#screen .kmroot > div:first-child'); if (sc2) sc2.scrollTop = 0;
+        return;
+      }
+      if (home) { try { const k = SAVE_PREFIX + name; const cur = JSON.parse(localStorage.getItem(k) || 'null') || {}; const keep = {}; for (const key in home) if (key.charAt(0) !== '_') keep[key] = home[key]; localStorage.setItem(k, JSON.stringify({ ...cur, ...keep })); } catch (err) {} }
+    }
+    location.hash = '#/' + name;
   });
   window.addEventListener('hashchange', route);
   window.KM = { mount, route, app };

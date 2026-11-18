@@ -1,4 +1,4 @@
-const VERSION = 'km-1.3.0';
+const VERSION = 'km-1.3.1';
 const FILES = ['./', './index.html', './pruebas.html', './app/app.css', './app/runtime.js', './app/screens.js', './app/datos.js', './app/img/osmo.png', './app/img/sony.png', './manifest.webmanifest', './lib/jspdf.umd.min.js', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' }))))); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION && k !== 'km-fuentes').map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
