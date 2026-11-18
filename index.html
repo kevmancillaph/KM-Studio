@@ -30,6 +30,10 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then((r) => {
     if (r.waiting && navigator.serviceWorker.controller) aviso(r.waiting);
     r.addEventListener('updatefound', () => { const n = r.installing; n.addEventListener('statechange', () => { if (n.state === 'installed' && navigator.serviceWorker.controller) aviso(n); }); });
+    const chk = () => { try { r.update().catch(() => {}); } catch (e) {} };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) chk(); });
+    setInterval(chk, 120000);
+    chk();
   });
   let rec = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (rec) return; rec = true; location.reload(); });
 }
