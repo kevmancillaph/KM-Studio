@@ -26,7 +26,7 @@
   };
   const interp = (s, scope) => s.replace(/\{\{([^}]+)\}\}/g, (m, p) => { const v = look(p, scope); return v == null ? '' : String(v); });
   const whole = (s) => { const m = /^\s*\{\{([^}]+)\}\}\s*$/.exec(s || ''); return m ? m[1] : null; };
-  const EV = { onclick: 'click', onchange: 'change', oninput: 'input', onfocus: 'focus', onblur: 'blur', onkeydown: 'keydown', oncontextmenu: 'contextmenu' };
+  const EV = { onclick: 'click', onchange: 'change', oninput: 'input', onfocus: 'focus', onblur: 'blur', onkeydown: 'keydown', oncontextmenu: 'contextmenu', onpointerdown: 'pointerdown' };
 
   function build(node, scope, parent) {
     if (node.nodeType === 3) { parent.appendChild(document.createTextNode(interp(node.textContent, scope))); return; }
