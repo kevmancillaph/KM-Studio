@@ -74,7 +74,7 @@ this.state = { _msg: '' };
 }
 componentDidMount() {
 this.kmStart();
-this.tick = setInterval(() => { const D = window.KM_DATA; if (D && D.getRun().run) this.forceUpdate(); }, 1000);
+this.tick = setInterval(() => { const D = window.KM_DATA; if (D && D.runs().length) this.forceUpdate(); }, 1000);
 }
 componentWillUnmount() {
 this.kmStop();
@@ -91,12 +91,12 @@ const dateLabel = D ? D.longDate(T) : '';
 const pend = D ? D.pending() : [];
 const nx = pend[0] || null;
 const inf = nx ? D.info(nx) : null;
-const RUN = D ? D.getRun() : { run: null, start: 0 };
-const onThis = !!(RUN.run && nx && inf && RUN.run.id === nx.id && RUN.run.idx === inf.cur);
-const live = onThis ? Math.max(0, (Date.now() - RUN.start) / 1000) : 0;
+const RUNS = D ? D.runs() : [];
+const R1 = nx && inf ? RUNS.find((r) => r.id === nx.id && r.idx === inf.cur) : null;
+const onThis = !!R1;
+const live = onThis ? Math.max(0, (Date.now() - R1.start) / 1000) : 0;
 const base = nx && inf && inf.cur >= 0 ? ((nx.times || {})[inf.cur] || 0) : 0;
 const secs = base + live;
-const flushRun = (arr) => { const r = D.getRun(); if (!r.run) return arr; const add = Math.max(0, (Date.now() - r.start) / 1000); return arr.map((x) => x.id === r.run.id ? { ...x, times: { ...(x.times || {}), [r.run.idx]: ((x.times || {})[r.run.idx] || 0) + add } } : x); };
 const goal = D ? D.goal() : 5;
 const dn = D ? D.doneToday() : 0;
 const goalDone = dn >= goal;
@@ -119,7 +119,7 @@ const week = D ? D.weekSecs() : 0;
 const wh = week / 3600;
 const queue = pend.slice(1, 4).map((it) => { const i2 = D.info(it); const d = it.due ? D.diff(it.due, T) : 9; return { title: it.name + ' · ' + it.client, when: it.due ? D.dayLabel(it.due) : 'Sin fecha', color: d <= 1 ? 'var(--warn)' : 'var(--muted)', pct: i2.pct, stage: i2.cur >= 0 ? i2.stages[i2.cur] : '' }; });
 return {
-dateLabel: dateLabel + ' · v1.6.0',
+dateLabel: dateLabel + ' · v1.7.0',
 goalText: dn + '/' + goal,
 streak,
 ringOffset: 213.6 * (1 - Math.min(1, dn / goal)),
@@ -151,17 +151,15 @@ hasQueue: queue.length > 0, queue,
 toggleTimer: () => {
 if (!nx || inf.cur < 0) return;
 this.kmSfx(onThis ? 'pause' : 'start');
-const items = flushRun(D.items());
-D.saveItems(items);
-if (onThis) D.setRun(null, 0); else D.setRun({ id: nx.id, idx: inf.cur }, Date.now());
+if (onThis) D.stopRun(nx.id, inf.cur); else D.startRun(nx.id, inf.cur);
 this.forceUpdate();
 },
 finish: () => {
 if (!nx || inf.cur < 0) return;
 const before = D.doneToday();
 const goalNow = D.goal();
-const items = flushRun(D.items()).map((x) => { if (x.id !== nx.id) return x; const done = { ...(x.done || {}) }; done[inf.cur] = true; return { ...x, done }; });
-if (D.getRun().run) D.setRun(null, 0);
+D.stopRun(nx.id, inf.cur);
+const items = D.items().map((x) => { if (x.id !== nx.id) return x; const done = { ...(x.done || {}) }; done[inf.cur] = true; return { ...x, done }; });
 D.saveItems(items);
 D.addLog(1, secs);
 const reached = before < goalNow && before + 1 >= goalNow;
@@ -272,25 +270,34 @@ edicion: { label: 'Edición de material del cliente', short: 'Edición', stages:
 try { const o = JSON.parse(localStorage.getItem('kmStageOrder') || '{}'); Object.keys(o).forEach((k) => { if (!T[k] || !Array.isArray(o[k])) return; const base = T[k].stages; const ord = o[k].filter((n) => base.indexOf(n) >= 0); base.forEach((n) => { if (ord.indexOf(n) < 0) ord.push(n); }); T[k] = { ...T[k], stages: ord }; }); } catch (e) {}
 return T;
 }
+kmRuns() {
+const s = this.state;
+if (Array.isArray(s.runs) && s.runs.length) return s.runs.filter((r) => r && r.id != null && r.idx != null);
+if (s.running && s.running.id != null) return [{ id: s.running.id, idx: s.running.idx, start: s.runStart || Date.now() }];
+return [];
+}
+kmFlush(items, list, now) {
+return items.map((x) => { let t = null; list.forEach((r) => { if (r.id !== x.id) return; t = t || { ...(x.times || {}) }; t[r.idx] = (t[r.idx] || 0) + Math.max(0, (now - r.start) / 1000); }); return t ? { ...x, times: t } : x; });
+}
 kmSkip(id, i, on) {
 const st = this.state;
 const items = st.items.map((x) => { if (x.id !== id) return x; const skip = { ...(x.skip || {}) }; const done = { ...(x.done || {}) }; const times = { ...(x.times || {}) }; if (on) { skip[i] = true; done[i] = true; delete times[i]; } else { delete skip[i]; delete done[i]; } return { ...x, skip, done, times }; });
-const run = st.running && st.running.id === id && st.running.idx === i && on ? null : st.running;
+const runs = on ? this.kmRuns().filter((r) => !(r.id === id && r.idx === i)) : this.kmRuns();
 this.kmSfx(on ? 'pause' : 'tap');
-this.setState({ items, running: run, _stMenu: -1, msg: on ? 'Etapa omitida en este video.' : 'Etapa restaurada.' });
+this.setState({ items, runs, running: null, _stMenu: -1, msg: on ? 'Etapa omitida en este video.' : 'Etapa restaurada.' });
 }
 kmMoveStage(from, to) {
 const st = this.state; const TYPES = this.kmTypes();
 const sel = st.items.find((it) => it.id === st.selId); if (!sel || from === to || from < 0 || to < 0) return;
 const type = sel.type; const old = TYPES[type].stages; const names = old.slice(); const nm = names.splice(from, 1)[0]; names.splice(to, 0, nm);
 const mapIdx = (i) => names.indexOf(old[i]);
-const run = st.running;
-const flushed = run ? st.items.map((it) => it.id === run.id ? { ...it, times: { ...(it.times || {}), [run.idx]: ((it.times || {})[run.idx] || 0) + Math.max(0, (Date.now() - st.runStart) / 1000) } } : it) : st.items;
+const runs = this.kmRuns(); const now = Date.now();
+const flushed = this.kmFlush(st.items, runs, now);
 const items = flushed.map((x) => { if (x.type !== type) return x; const done = {}; const times = {}; Object.keys(x.done || {}).forEach((k) => { if (x.done[k]) done[mapIdx(Number(k))] = true; }); Object.keys(x.times || {}).forEach((k) => { times[mapIdx(Number(k))] = x.times[k]; }); const skip = {}; Object.keys(x.skip || {}).forEach((k) => { if (x.skip[k]) skip[mapIdx(Number(k))] = true; }); return { ...x, done, times, skip }; });
-let run2 = run; const runItem = run ? st.items.find((it) => it.id === run.id) : null; if (run && runItem && runItem.type === type) run2 = { id: run.id, idx: mapIdx(run.idx) };
+const runs2 = runs.map((r) => { const ri = st.items.find((it) => it.id === r.id); return { id: r.id, idx: ri && ri.type === type ? mapIdx(r.idx) : r.idx, start: now }; });
 try { const o = JSON.parse(localStorage.getItem('kmStageOrder') || '{}'); o[type] = names; localStorage.setItem('kmStageOrder', JSON.stringify(o)); } catch (e) {}
 this.kmSfx('done');
-this.setState({ items, running: run2, runStart: Date.now(), _drag: -1, _over: -1, msg: 'Orden guardado para todos los videos de tipo ' + TYPES[type].label + '.' });
+this.setState({ items, runs: runs2, running: null, _drag: -1, _over: -1, msg: 'Orden guardado para todos los videos de tipo ' + TYPES[type].label + '.' });
 }
 kmStartDrag(i) {
 this._dragIdx = i; this._over = i;
@@ -325,7 +332,7 @@ constructor(props) {
 super(props);
 const mk = (n, mins) => { const done = {}; const times = {}; mins.forEach((m, i) => { times[i] = m * 60; }); for (let i = 0; i < n; i++) done[i] = true; return { done, times }; };
 this.state = {
-view: 'list', filter: 'pend', idleAsk: false, selId: 'v2', nextId: 20, running: null, runStart: 0, msg: '',
+view: 'list', filter: 'pend', idleAsk: false, selId: 'v2', nextId: 20, runs: [], msg: '',
 form: { client: 'Ana y Luis', type: 'reel', name: '', due: '2026-11-23', brand: true },
 items: [
 { id: 'v1', name: 'Reel 3 de 8', client: 'Cafetería Aroma', type: 'reel', due: '2026-11-17', ...mk(5, [18, 9, 48, 22, 14, 12]) },
@@ -344,7 +351,7 @@ items: [
 }
 componentDidMount() {
 this.kmStart();
-this.tick = setInterval(() => { if (this.state.running) this.forceUpdate(); }, 1000);
+this.tick = setInterval(() => { if (this.kmRuns().length) this.forceUpdate(); }, 1000);
 }
 componentWillUnmount() {
 this.kmStop();
@@ -359,8 +366,9 @@ const DOWS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const toDate = (k) => { const p = k.split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])); };
 const diffDays = (a, b) => Math.round((toDate(a) - toDate(b)) / 86400000);
 const now = Date.now();
-const run = st.running;
-const elapsed = (it, i) => (it.times[i] || 0) + (run && run.id === it.id && run.idx === i ? (now - st.runStart) / 1000 : 0);
+const runs = this.kmRuns();
+const runOf = (id, i) => runs.find((r) => r.id === id && r.idx === i);
+const elapsed = (it, i) => { const r = runOf(it.id, i); return (it.times[i] || 0) + (r ? Math.max(0, (now - r.start) / 1000) : 0); };
 const pad = (n) => String(Math.floor(n)).padStart(2, '0');
 const clock = (s) => s >= 3600 ? Math.floor(s / 3600) + ':' + pad((s % 3600) / 60) + ':' + pad(s % 60) : pad(s / 60) + ':' + pad(s % 60);
 const dur = (s) => { const m = Math.round(s / 60); if (m < 1) return 'Sin tiempo'; const h = Math.floor(m / 60); const r = m % 60; return h ? h + ' h' + (r ? ' ' + r + ' min' : '') : r + ' min'; };
@@ -372,13 +380,14 @@ const firstOpen = stages.findIndex((_, i) => !it.done[i]);
 const secs = stages.reduce((a, _, i) => a + elapsed(it, i), 0);
 return { stages, count, firstOpen, secs, allDone: count === stages.length };
 };
-const commit = () => run ? st.items.map((it) => it.id === run.id ? { ...it, times: { ...it.times, [run.idx]: elapsed(it, run.idx) } } : it) : st.items;
+const commitOne = (id, i) => { const r = runOf(id, i); return r ? this.kmFlush(st.items, [r], now) : st.items; };
+const without = (id, i) => runs.filter((r) => !(r.id === id && r.idx === i));
 
 const isPend = st.filter === 'pend';
 const card = (it) => {
 const f = info(it);
 const d = diffDays(it.due, TODAY);
-const active = !!run && run.id === it.id;
+const nAct = runs.filter((r) => r.id === it.id).length; const active = nAct > 0;
 return {
 name: it.name, client: it.client, typeLabel: TYPES[it.type].short,
 dueLabel: f.allDone ? 'Entregado' : dueLabel(it.due),
@@ -386,7 +395,7 @@ dueColor: !f.allDone && d <= 1 ? 'var(--warn)' : 'var(--text)',
 pct: Math.round((f.count / f.stages.length) * 100),
 needsBrand: !!it.needsBrand && !f.allDone,
 stage: f.allDone ? 'Entregado el ' + dueLabel(it.due) : 'Etapa ' + (f.firstOpen + 1) + ' de ' + f.stages.length + ': ' + f.stages[f.firstOpen],
-time: active ? 'En curso · ' + dur(f.secs) : dur(f.secs),
+time: active ? (nAct > 1 ? nAct + ' en curso · ' : 'En curso · ') + dur(f.secs) : dur(f.secs),
 timeColor: active ? 'var(--accentText)' : 'var(--text)',
 open: () => { if (this.kmCtx && Date.now() - this.kmCtx < 700) return; this.kmSfx('tap'); this.setState({ view: 'detail', selId: it.id, msg: '' }); },
 menu: (e) => { if (e && e.preventDefault) e.preventDefault(); this.kmCtx = Date.now(); this.kmSfx('tap'); this.setState({ _menu: it.id, _mMode: 'main' }); }
@@ -423,7 +432,7 @@ confirmText: mi ? '¿Eliminar "' + mi.name + '"? Se pierden sus etapas y tiempos
 mfName: mf.name || '', mfClient: mf.client || '', mfDue: mf.due || '',
 setMName: setMF('name'), setMClient: setMF('client'), setMDue: setMF('due'), typeOpts, typeWarn, hasTypeWarn: !!typeWarn,
 editSave: () => { if (!mi) return; this.kmSfx('done'); const n = TYPES[curType].stages.length; this.setState({ items: patchItem(mi.id, (x) => { const d = {}; Object.keys(x.done || {}).forEach((k) => { if (Number(k) < n && x.done[k]) d[k] = true; }); return { ...x, name: (mf.name || '').trim() || x.name, client: (mf.client || '').trim() || x.client, due: mf.due || x.due, type: curType, done: d }; }), _menu: null, _mMode: 'main' }); toast('Cambios guardados'); },
-doDelete: () => { if (!mi) return; const idx = st.items.findIndex((x) => x.id === mi.id); this._undoData = { it: mi, idx }; if (derived) hidSet(hidGet().concat(['i:' + mi.id])); this.setState({ items: st.items.filter((x) => x.id !== mi.id), view: 'list', _menu: null, _mMode: 'main' }); this.kmSfx('tap'); toast('Eliminado: ' + mi.name, true); },
+doDelete: () => { if (!mi) return; const idx = st.items.findIndex((x) => x.id === mi.id); this._undoData = { it: mi, idx }; if (derived) hidSet(hidGet().concat(['i:' + mi.id])); this.setState({ items: st.items.filter((x) => x.id !== mi.id), runs: runs.filter((r) => r.id !== mi.id), running: null, view: 'list', _menu: null, _mMode: 'main' }); this.kmSfx('tap'); toast('Eliminado: ' + mi.name, true); },
 toastOn: !!st._toast, toastText: st._toast || '', toastUndo: !!st._undo,
 undo: () => { const u = this._undoData; if (!u) return; const nx = st.items.slice(); nx.splice(Math.min(u.idx, nx.length), 0, u.it); hidSet(hidGet().filter((x) => x !== 'i:' + u.it.id)); this._undoData = null; clearTimeout(this.kmToastT); this.setState({ items: nx, _toast: null, _undo: false }); }
 };
@@ -453,7 +462,7 @@ const smSkipped = smOk && !!(sel.skip && sel.skip[smi]);
 const stages = sf.stages.map((label, i) => {
 const skipped = !!(sel.skip && sel.skip[i]);
 const done = !!sel.done[i] && !skipped;
-const running = !!run && run.id === sel.id && run.idx === i;
+const running = !!runOf(sel.id, i);
 return {
 label, done, todo: !done && !skipped, skip: skipped, deco: skipped ? 'line-through' : 'none', running, paused: !running,
 i, down: (e) => this.kmPress(e, i), ctx: (e) => { if (e && e.preventDefault) e.preventDefault(); },
@@ -467,9 +476,8 @@ timerAria: (running ? 'Pausar cronómetro de ' : 'Iniciar cronómetro de ') + la
 timer: () => {
 if (this._dragged && Date.now() - this._dragged < 500) return;
 this.kmSfx(running ? 'pause' : 'start');
-const items = commit();
-if (running) this.setState({ items, running: null });
-else this.setState({ items, running: { id: sel.id, idx: i }, runStart: Date.now() });
+if (running) this.setState({ items: commitOne(sel.id, i), runs: without(sel.id, i), running: null });
+else this.setState({ runs: runs.concat([{ id: sel.id, idx: i, start: Date.now() }]), running: null });
 },
 toggle: () => {
 if (this._dragged && Date.now() - this._dragged < 500) return;
@@ -478,9 +486,9 @@ const nowDone = !sel.done[i];
 this.kmSfx(nowDone ? (sf.count + 1 === sf.stages.length ? 'goal' : 'done') : 'tap');
 try { if (nowDone && navigator.vibrate) navigator.vibrate(30); } catch (e) {}
 if (nowDone && sf.count + 1 === sf.stages.length) this.kmParty();
-const items = commit().map((x) => x.id === sel.id ? { ...x, done: { ...x.done, [i]: nowDone } } : x);
+const items = commitOne(sel.id, i).map((x) => x.id === sel.id ? { ...x, done: { ...x.done, [i]: nowDone } } : x);
 const t = (items.find((x) => x.id === sel.id).times[i] || 0);
-this.setState({ items, running: running ? null : st.running, msg: nowDone ? label + ' lista en ' + Math.max(1, Math.round(t / 60)) + ' min.' : '' });
+this.setState({ items, runs: running ? without(sel.id, i) : runs, running: null, msg: nowDone ? label + ' lista en ' + Math.max(1, Math.round(t / 60)) + ' min.' : '' });
 }
 };
 });
@@ -516,15 +524,15 @@ brandTrack: f.brand ? 'var(--accent)' : 'var(--track)', brandKnob: f.brand ? 23 
 toggleBrand: () => { this.kmSfx('tap'); this.setState({ form: { ...f, brand: !f.brand } }); },
 stMenuOpen: smOk, stMenuClose: () => this.setState({ _stMenu: -1 }), stMenuTitle: smOk ? sf.stages[smi] : '', stMenuSub: smOk ? (smSkipped ? 'Está omitida en este video. No cuenta en tus tiempos.' : 'Si no usaste esta etapa en este video, la omites. No cuenta como tiempo ni baja tus promedios. Los otros videos no cambian.') : '', stMenuLabel: smSkipped ? 'Restaurar etapa' : 'Omitir en este video', stMenuColor: smSkipped ? 'var(--text)' : 'var(--warn)', stMenuAct: () => this.kmSkip(sel.id, smi, !smSkipped),
 selNeedsBrand: !!sel.needsBrand && !sf.allDone, selClient: sel.client,
-idleAsk: st.idleAsk && !!run, canSimIdle: !!run && !st.idleAsk && askCfg.on, askEvery: askCfg.every, askWait: askCfg.wait,
+idleAsk: st.idleAsk && runs.length > 0, canSimIdle: runs.length > 0 && !st.idleAsk && askCfg.on, askEvery: askCfg.every, askWait: askCfg.wait,
 simIdle: () => { this.kmSfx('alert'); this.setState({ idleAsk: true }); },
 idleYes: () => { this.kmSfx('done'); this.setState({ idleAsk: false, msg: 'Sigues en marcha. El cronómetro no se tocó.' }); },
 idleNo: () => {
 this.kmSfx('pause');
-let items = commit();
+let items = this.kmFlush(st.items, runs, now);
 const cut = askCfg.discount ? askCfg.wait * 60 : 0;
-if (run && cut) items = items.map((x) => x.id === run.id ? { ...x, times: { ...x.times, [run.idx]: Math.max(0, (x.times[run.idx] || 0) - cut) } } : x);
-this.setState({ items, running: null, idleAsk: false, msg: cut ? 'Pausado. Se descontaron ' + askCfg.wait + ' min sin respuesta.' : 'Pausado.' });
+if (cut) runs.forEach((r) => { items = items.map((x) => x.id === r.id ? { ...x, times: { ...x.times, [r.idx]: Math.max(0, (x.times[r.idx] || 0) - cut) } } : x); });
+this.setState({ items, runs: [], running: null, idleAsk: false, msg: cut ? 'Pausado. Se descontaron ' + askCfg.wait + ' min sin respuesta.' : 'Pausado.' });
 },
 brandOk: () => { this.kmSfx('done'); this.setState({ items: st.items.map((x) => x.id === sel.id ? { ...x, needsBrand: false } : x) }); },
 namePlaceholder: tdef.short,

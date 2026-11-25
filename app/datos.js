@@ -19,10 +19,20 @@ window.KM_DATA = (function () {
   }
   const types = () => { try { return window.KM_SCREENS.Proyecto.Comp.prototype.kmTypes.call({}); } catch (e) { return {}; } };
   const items = () => J('kmS.Proyecto', {}).items || [];
-  const getRun = () => { const s = J('kmS.Proyecto', {}); return { run: s.running || null, start: s.runStart || 0 }; };
-  const setRun = (r, t) => { const s = J('kmS.Proyecto', {}); s.running = r; s.runStart = t || 0; W('kmS.Proyecto', s); };
+  // Varios cronómetros: kmS.Proyecto.runs = [{id, idx, start}]. Lee el formato viejo (running + runStart).
+  const runsOf = (s) => { if (Array.isArray(s.runs) && s.runs.length) return s.runs.filter((r) => r && r.id != null && r.idx != null); if (s.running && s.running.id != null) return [{ id: s.running.id, idx: s.running.idx, start: s.runStart || Date.now() }]; return []; };
+  const runs = () => runsOf(J('kmS.Proyecto', {}));
+  const setRuns = (arr) => { const s = J('kmS.Proyecto', {}); s.runs = arr; s.running = null; s.runStart = 0; W('kmS.Proyecto', s); };
+  const isRun = (id, idx) => runs().some((r) => r.id === id && r.idx === idx);
+  const addTime = (arr, list) => { const now = Date.now(); return arr.map((x) => { let t = null; list.forEach((r) => { if (r.id !== x.id) return; t = t || { ...(x.times || {}) }; t[r.idx] = (t[r.idx] || 0) + Math.max(0, (now - r.start) / 1000); }); return t ? { ...x, times: t } : x; }); };
+  const getRun = () => { const a = runs(); const r = a[a.length - 1]; return { run: r ? { id: r.id, idx: r.idx } : null, start: r ? r.start : 0, all: a }; };
   const saveItems = (arr) => { const s = J('kmS.Proyecto', {}); s.items = arr; W('kmS.Proyecto', s); };
-  const pauseNow = () => { const r = getRun(); if (!r.run) return null; const add = Math.max(0, (Date.now() - r.start) / 1000); saveItems(items().map((x) => x.id === r.run.id ? { ...x, times: { ...(x.times || {}), [r.run.idx]: ((x.times || {})[r.run.idx] || 0) + add } } : x)); setRun(null, 0); return r.run; };
+  const startRun = (id, idx) => { if (isRun(id, idx)) return; setRuns(runs().concat([{ id, idx, start: Date.now() }])); };
+  const stopRun = (id, idx) => { const a = runs(); const hit = a.filter((r) => r.id === id && r.idx === idx); if (!hit.length) return false; saveItems(addTime(items(), hit)); setRuns(a.filter((r) => !(r.id === id && r.idx === idx))); return true; };
+  const pauseAll = () => { const a = runs(); if (!a.length) return []; saveItems(addTime(items(), a)); setRuns([]); return a.map((r) => ({ id: r.id, idx: r.idx })); };
+  const resumeAll = (list) => { const a = runs(); const now = Date.now(); (list || []).forEach((r) => { if (!a.some((x) => x.id === r.id && x.idx === r.idx)) a.push({ id: r.id, idx: r.idx, start: now }); }); setRuns(a); };
+  const setRun = (r, t) => { if (!r) { pauseAll(); return; } setRuns(runs().filter((x) => !(x.id === r.id && x.idx === r.idx)).concat([{ id: r.id, idx: r.idx, start: t || Date.now() }])); };
+  const pauseNow = () => { const r = getRun().run; if (!r) return null; stopRun(r.id, r.idx); return r; };
   const finishNow = (run) => { if (!run) return; let t = 0; saveItems(items().map((x) => { if (x.id !== run.id) return x; t = (x.times || {})[run.idx] || 0; return { ...x, done: { ...(x.done || {}), [run.idx]: true } }; })); try { addLog(1, t); } catch (e) {} };
   const info = (it) => { const T = types()[it.type] || { stages: [], short: '' }; const n = T.stages.length; let done = 0; let cur = -1; for (let i = 0; i < n; i++) { if (it.done && it.done[i]) done++; else if (cur < 0) cur = i; } return { stages: T.stages, short: T.short, n, done, cur, all: n > 0 && cur < 0, pct: n ? Math.round(done / n * 100) : 0 }; };
   const pending = () => items().filter((x) => !info(x).all).sort((a, b) => String(a.due || '9').localeCompare(String(b.due || '9')));
@@ -51,5 +61,5 @@ window.KM_DATA = (function () {
     return best;
   };
   const hasSample = () => { try { if (localStorage.getItem('kmVacio') === '1') return false; } catch (e) {} const c = J('kmS.Clientes', {}).clients; return Array.isArray(c) ? c.some((x) => x.id <= 5 && !x.accNew) : true; };
-  return { hasSample, J, W, today, iso, toDate, diff, MESES, DIAS, cap, group, seed, types, items, saveItems, getRun, setRun, pauseNow, finishNow, info, pending, clients, owed, goal, log, addLog, doneToday, streak, weekSecs, monthPaid, acc, dayLabel, longDate, nextEvent, planCobro };
+  return { hasSample, J, W, today, iso, toDate, diff, MESES, DIAS, cap, group, seed, types, items, saveItems, runsOf, runs, setRuns, isRun, startRun, stopRun, pauseAll, resumeAll, getRun, setRun, pauseNow, finishNow, info, pending, clients, owed, goal, log, addLog, doneToday, streak, weekSecs, monthPaid, acc, dayLabel, longDate, nextEvent, planCobro };
 })();
