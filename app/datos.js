@@ -33,6 +33,15 @@ window.KM_DATA = (function () {
   const resumeAll = (list) => { const a = runs(); const now = Date.now(); (list || []).forEach((r) => { if (!a.some((x) => x.id === r.id && x.idx === r.idx)) a.push({ id: r.id, idx: r.idx, start: now }); }); setRuns(a); };
   const setRun = (r, t) => { if (!r) { pauseAll(); return; } setRuns(runs().filter((x) => !(x.id === r.id && x.idx === r.idx)).concat([{ id: r.id, idx: r.idx, start: t || Date.now() }])); };
   const pauseNow = () => { const r = getRun().run; if (!r) return null; stopRun(r.id, r.idx); return r; };
+  // ¿Sigues trabajando? kmAsk = {on, every, wait, discount} (min). kmAskOk = último "Sí, sigo".
+  // Si pasan every+wait min sin respuesta, se cortan todos los cronómetros en el minuto every (o every+wait sin descuento).
+  const askCfg = () => { const a = J('kmAsk', null) || {}; return { on: a.on !== false, every: a.every || 45, wait: a.wait || 5, discount: a.discount !== false }; };
+  const idleBase = () => { const a = runs(); if (!a.length) return 0; return Math.max(Number(J('kmAskOk', 0)) || 0, ...a.map((r) => r.start || 0)); };
+  const cutUntil = (end) => { const a = runs(); if (!a.length) return null; const list = a.map((r) => ({ id: r.id, idx: r.idx, secs: Math.max(0, (end - r.start) / 1000) })); saveItems(items().map((x) => { let t = null; list.forEach((r) => { if (r.id !== x.id) return; t = t || { ...(x.times || {}) }; t[r.idx] = (t[r.idx] || 0) + r.secs; }); return t ? { ...x, times: t } : x; })); setRuns([]); const info2 = { at: end, when: Date.now(), list }; W('kmIdleCut', info2); return info2; };
+  const idleCheck = () => { const c = askCfg(); const b = idleBase(); if (!c.on || !b) return { state: 'off' }; const el = Date.now() - b; const ask = b + c.every * 60000; if (el >= (c.every + c.wait) * 60000) return { state: 'cut', cut: cutUntil(c.discount ? ask : ask + c.wait * 60000) }; if (el >= c.every * 60000) return { state: 'ask', since: ask, deadline: ask + c.wait * 60000, cfg: c }; return { state: 'run', next: ask }; };
+  const idleYes = () => W('kmAskOk', Date.now());
+  const idleNo = () => { const c = askCfg(); const b = idleBase(); if (!b) return null; const ask = b + c.every * 60000; return cutUntil(c.discount ? Math.min(ask, Date.now()) : Date.now()); };
+  const setTime = (id, idx, secs) => { const a = runs(); setRuns(a.filter((r) => !(r.id === id && r.idx === idx))); saveItems(items().map((x) => x.id === id ? { ...x, times: { ...(x.times || {}), [idx]: Math.max(0, secs) } } : x)); };
   const finishNow = (run) => { if (!run) return; let t = 0; saveItems(items().map((x) => { if (x.id !== run.id) return x; t = (x.times || {})[run.idx] || 0; return { ...x, done: { ...(x.done || {}), [run.idx]: true } }; })); try { addLog(1, t); } catch (e) {} };
   const info = (it) => { const T = types()[it.type] || { stages: [], short: '' }; const n = T.stages.length; let done = 0; let cur = -1; for (let i = 0; i < n; i++) { if (it.done && it.done[i]) done++; else if (cur < 0) cur = i; } return { stages: T.stages, short: T.short, n, done, cur, all: n > 0 && cur < 0, pct: n ? Math.round(done / n * 100) : 0 }; };
   const pending = () => items().filter((x) => !info(x).all).sort((a, b) => String(a.due || '9').localeCompare(String(b.due || '9')));
@@ -61,5 +70,5 @@ window.KM_DATA = (function () {
     return best;
   };
   const hasSample = () => { try { if (localStorage.getItem('kmVacio') === '1') return false; } catch (e) {} const c = J('kmS.Clientes', {}).clients; return Array.isArray(c) ? c.some((x) => x.id <= 5 && !x.accNew) : true; };
-  return { hasSample, J, W, today, iso, toDate, diff, MESES, DIAS, cap, group, seed, types, items, saveItems, runsOf, runs, setRuns, isRun, startRun, stopRun, pauseAll, resumeAll, getRun, setRun, pauseNow, finishNow, info, pending, clients, owed, goal, log, addLog, doneToday, streak, weekSecs, monthPaid, acc, dayLabel, longDate, nextEvent, planCobro };
+  return { hasSample, J, W, today, iso, toDate, diff, MESES, DIAS, cap, group, seed, types, items, saveItems, runsOf, runs, setRuns, isRun, startRun, stopRun, pauseAll, resumeAll, getRun, setRun, pauseNow, finishNow, askCfg, idleCheck, idleYes, idleNo, setTime, info, pending, clients, owed, goal, log, addLog, doneToday, streak, weekSecs, monthPaid, acc, dayLabel, longDate, nextEvent, planCobro };
 })();
