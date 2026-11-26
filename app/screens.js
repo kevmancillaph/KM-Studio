@@ -119,7 +119,7 @@ const week = D ? D.weekSecs() : 0;
 const wh = week / 3600;
 const queue = pend.slice(1, 4).map((it) => { const i2 = D.info(it); const d = it.due ? D.diff(it.due, T) : 9; return { title: it.name + ' · ' + it.client, when: it.due ? D.dayLabel(it.due) : 'Sin fecha', color: d <= 1 ? 'var(--warn)' : 'var(--muted)', pct: i2.pct, stage: i2.cur >= 0 ? i2.stages[i2.cur] : '' }; });
 return {
-dateLabel: dateLabel + ' · v1.8.0',
+dateLabel: dateLabel + ' · v1.8.1',
 goalText: dn + '/' + goal,
 streak,
 ringOffset: 213.6 * (1 - Math.min(1, dn / goal)),

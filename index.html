@@ -124,7 +124,7 @@ window.kmPipDemo = async function () {
   document.addEventListener('click', () => setTimeout(sync, 150), true);
 })();
 </script>
-<div id="idl" role="alertdialog" aria-live="assertive" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);background:#1A1C22;color:#F2F3F5;border:1px solid #C6F432;border-radius:16px;padding:14px 16px;display:none;flex-direction:column;gap:10px;font:500 14px/1.45 system-ui;z-index:98;box-shadow:0 10px 30px rgba(0,0,0,.5)"><b id="idlT" style="font-size:16px"></b><span id="idlX"></span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button id="idlA" style="display:flex;align-items:center;justify-content:center;height:48px;border:0;border-radius:12px;background:#C6F432;color:#0E0F13;font:600 14px system-ui"></button><button id="idlB" style="display:flex;align-items:center;justify-content:center;height:48px;border:0;border-radius:12px;background:#2A2D35;color:#F2F3F5;font:600 14px system-ui"></button></div></div>
+<div id="idl" role="alertdialog" aria-live="assertive" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);background:#1A1C22;color:#F2F3F5;border:1px solid #C6F432;border-radius:16px;padding:14px 16px;display:none;flex-direction:column;gap:10px;font:500 14px/1.45 system-ui;z-index:98;box-shadow:0 10px 30px rgba(0,0,0,.5)"><b id="idlT" style="font-size:16px"></b><span id="idlX"></span><button id="idlC" style="display:none;align-items:center;justify-content:center;height:48px;border:0;border-radius:12px;background:#C6F432;color:#0E0F13;font:600 14px system-ui"></button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button id="idlA" style="display:flex;align-items:center;justify-content:center;height:48px;border:0;border-radius:12px;background:#C6F432;color:#0E0F13;font:600 14px system-ui"></button><button id="idlB" style="display:flex;align-items:center;justify-content:center;height:48px;border:0;border-radius:12px;background:#2A2D35;color:#F2F3F5;font:600 14px system-ui"></button></div></div>
 <script>
 // Corte automático del cronómetro. La regla vive en KM_DATA.idleCheck; aquí solo se muestra.
 (function () {
@@ -135,16 +135,18 @@ window.kmPipDemo = async function () {
   const label = (r) => { const it = D().items().find((x) => x.id === r.id); if (!it) return ''; const st = (D().info(it).stages || [])[r.idx] || ''; return it.name + ' · ' + st; };
   const remount = () => { try { if (window.KM && KM.app && KM.app.name) KM.mount(KM.app.name); } catch (e) {} try { window.kmLock && kmLock.sync(); } catch (e) {} };
   const notify = (title, body) => { try { if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return; navigator.serviceWorker.ready.then((r) => r.showNotification(title, { body, tag: 'km-idle', renotify: true, vibrate: [120, 60, 120], icon: './icons/icon-192.png', badge: './icons/favicon.png' })).catch(() => {}); } catch (e) {} };
-  const show = (m, t, x, a, b, fa, fb) => { mode = m; $('idlT').textContent = t; $('idlX').textContent = x; $('idlA').textContent = a; $('idlB').textContent = b; $('idlA').onclick = fa; $('idlB').onclick = fb; $('idl').style.display = 'flex'; };
+  const show = (m, t, x, a, b, fa, fb, c, fc) => { mode = m; $('idlC').style.display = c ? 'flex' : 'none'; $('idlC').textContent = c || ''; $('idlC').onclick = fc || null; $('idlA').style.background = c ? '#2A2D35' : '#C6F432'; $('idlA').style.color = c ? '#F2F3F5' : '#0E0F13'; $('idlT').textContent = t; $('idlX').textContent = x; $('idlA').textContent = a; $('idlB').textContent = b; $('idlA').onclick = fa; $('idlB').onclick = fb; $('idl').style.display = 'flex'; };
   const hide = () => { mode = ''; $('idl').style.display = 'none'; };
   const openVideo = (id) => { try { const s = JSON.parse(localStorage.getItem('kmS.Proyecto') || '{}'); s.selId = id; s.view = 'detail'; localStorage.setItem('kmS.Proyecto', JSON.stringify(s)); } catch (e) {} if (location.hash === '#/Proyecto') { try { KM.mount('Proyecto'); } catch (e) {} } else location.hash = '#/Proyecto'; };
   function cutNotice() {
     let c = null; try { c = JSON.parse(localStorage.getItem('kmIdleCut') || 'null'); } catch (e) {}
     if (!c || !c.list || !c.list.length) return false;
     const first = c.list[0]; const more = c.list.length > 1 ? ' (y ' + (c.list.length - 1) + ' más)' : '';
-    show('cut', 'El cronómetro se detuvo solo', label(first) + more + '. Guardé el tiempo hasta las ' + hm(c.at) + ' (' + mins(first.secs) + ' en esta tanda). Si trabajaste más, corrige el tiempo con presión larga sobre la etapa.', 'Corregir', 'Entendido',
+    show('cut', 'El cronómetro se detuvo a las ' + hm(c.at), label(first) + more + '. No respondiste a "¿Sigues trabajando?". ¿Seguías en esta etapa?', 'Corregir', 'Ya había parado',
       () => { localStorage.removeItem('kmIdleCut'); hide(); openVideo(first.id); },
-      () => { localStorage.removeItem('kmIdleCut'); hide(); });
+      () => { localStorage.removeItem('kmIdleCut'); hide(); },
+      'Sí, seguía: sumar hasta ahora',
+      () => { const add = D().idleResume(); remount(); hide(); show('ok', 'Tiempo recuperado', 'Sumé ' + mins(add) + ' y el cronómetro sigue corriendo.', 'OK', 'Corregir', () => hide(), () => { hide(); openVideo(first.id); }); setTimeout(() => { if (mode === 'ok') hide(); }, 6000); });
     return true;
   }
   function tick() {
